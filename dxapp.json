@@ -1,0 +1,18 @@
+{
+  "name": "RSeQC",
+  "title": "RNA-Seq Quality Control",
+  "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools.  A graphical report of these metrics can be viewed in through the data browser.",
+  "categories": ["RNA-Seq"],
+  "dxapi": "1.0.0",
+  "inputSpec": [
+    {"name": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
+    {"name": "BED file", "class": "file"},
+    {"name": "Contaminants", "class": "array:record", "type": "ContigSet", "optional":true},
+    {"name": "Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true}
+  ],
+  "outputSpec": [
+    {"name": "Report", "class": "record", "type": "Report"}
+  ],
+  "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}]},
+  "version": "0.0.1"
+}
