@@ -37,27 +37,25 @@ class TestMyApp(unittest.TestCase):
 
         print "Running program with", input
         job = self.program.run(input)
-        print "Waiting for test_unpaired ", job.get_id()
-        job.wait_on_done()
-        print json.dumps(job.describe()["output"])
+        print "launched test_unpaired ", job.get_id()
 
 
-    def test_unpaired_with_contam(self):
+    def test_paired_with_contam(self):
         bed_file = dxpy.find_one_data_object(name="hg19_GRCh37_Feb2009_RefSeq.bed")['id']
-        mappings = dxpy.find_one_data_object(name="unpaired_RNA-Seq_mappings", typename="LetterMappings")['id']
+        mappings = dxpy.find_one_data_object(name="SRR018256_paired_RNA_Mappings", typename="LetterMappings")['id']
         contam_contig = dxpy.find_one_data_object(name="human rRNA", typename="ContigSet")['id']
-        reads = dxpy.find_one_data_object(name="SRR399297 reads", typename="LetterReads")['id']
+        reads = dxpy.find_one_data_object(name="SRR018256_reads", typename="LetterReads")['id']
         if bed_file == None:
             print "Cannot find hg19_GRCh37_Feb2009_RefSeq.bed.  Please upload it"
             return False
         if mappings == None:
-            print "Cannot find unpaired_RNA-Seq_mappings.  Please upload it"
+            print "Cannot find Mappings.  Please upload them"
             return False
         if contam_contig == None:
             print "Cannot find human rRNA.  Please upload it"
             return False
         if reads == None:
-            print "Cannot find SRR399297 reads.  Please upload it"
+            print "Cannot find SRR018256_reads.  Please upload it"
             return False
 
 
@@ -68,9 +66,7 @@ class TestMyApp(unittest.TestCase):
 
         print "Running program with", input
         job = self.program.run(input)
-        print "Waiting for test_unpaired_with_contam ", job.get_id()
-        job.wait_on_done()
-        print json.dumps(job.describe()["output"])
+        print "launched test_paired_with_contam ", job.get_id()
 
         
 if __name__ == '__main__':

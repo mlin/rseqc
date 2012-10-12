@@ -3,6 +3,7 @@
 import dxpy
 import subprocess
 import math
+import os
 
 # main function will spawn each analysis as a separate job
 # each analysis will then download the mappings and BED gene model and run itself
@@ -18,7 +19,7 @@ def map_contaminant(Contig, Reads):
     except StopIteration:
         raise dxpy.AppError("Unable to find app 'bwa'.  Please install it to enable contaminant mapping")
 
-    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True})
+    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True, "chunk_size":1000000})
 
     total_reads = 0
     for r in Reads:
@@ -44,19 +45,73 @@ def geneBody_coverage(BAM_file, BED_file):
     dxpy.download_dxfile(BED_file, "genes.bed")
     dxpy.download_dxfile(BAM_file, "mappings.bam")
 
-    run_shell( " ".join(["geneBody_coverage.py", "-i mappings.bam", "-r genes.bed", "-o geneBody"]))
-
+    # split mappings into chunks that can be done on a single worker
+    # all mappings are loaded into RAM so can only do 10 million at a time
+    run_shell(" ".join(["samtools", "view", "mappings.bam", "|", "split", "-l 10000000", "-", "split_map"]))
+    run_shell(" ".join(["samtools", "view", "-H", "mappings.bam", ">", "header_only.sam"]))
+    files = os.listdir(".")
+    jobs = []
+    for f in files:
+        if f.startswith("split_map"):
+            # add header 
+            run_shell(" ".join(["cat", "header_only.sam", f, ">", "temp.sam"]))
+            # convert to BAM
+            run_shell(" ".join(["samtools", "view", "-S", "-b", "temp.sam", ">", "temp.bam"]))
+            # upload file
+            dxfh = dxpy.upload_local_file("temp.bam")
+            # run analysis
+            jobs.append(dxpy.new_dxjob({"BAM_file":BAM_file, "BED_file":BED_file}, "run_gbc"))
+            
     run_shell( "ls -l" )
 
+    gbc_agg_input = {"sub_reports":[]}
+    for j in jobs:
+        gbc_agg_input["sub_reports"].append({"job":j.get_id(), "field":"file"})
+
+    agg_job = dxpy.new_dxjob(gbc_agg_input, "gbc_agg").get_id()
+    
+    return {"results":{"job":agg_job, "field":"cover"}}
+
+@dxpy.entry_point("run_gbc")
+def run_gbc(BAM_file, BED_file):
+    dxpy.download_dxfile(BED_file, "genes.bed")
+    dxpy.download_dxfile(BAM_file, "mappings.bam")
+
+    run_shell( " ".join(["geneBody_coverage.py", "-i mappings.bam", "-r genes.bed", "-o geneBody"]))
+
     results_id = dxpy.upload_local_file("geneBody.geneBodyCoverage.txt", wait_on_close=True).get_id()
-    return {"results":results_id}
+    return {"file":results_id}
+
+@dxpy.entry_point("gbc_agg")
+def gbc_agg(sub_reports):
+    cover = [0 for n in range(100)]
+    total_reads = 0
+    for i in range(len(sub_reports)):
+        dxpy.download_dxfile(sub_reports[i], str(i)+".txt")
+        with open(str(i)+".txt", "r") as fh:
+            # remove header info
+            fh.readline()
+            fh.readline()
+            fh.readline()
+
+            for bucket in range(100):
+                line = fh.readline()
+                count = float(line.split("\t")[1])
+                cover[bucket] += count
+                total_reads += count
+
+    # normalize by total reads for %
+    for i in range(len(cover)):
+        cover[i] /= total_reads
+    
+    return {"cover":cover}
 
 @dxpy.entry_point("inner_distance")
 def inner_distance(BAM_file, BED_file):
     dxpy.download_dxfile(BED_file, "genes.bed")
     dxpy.download_dxfile(BAM_file, "mappings.bam")
 
-    run_shell( " ".join(["inner_distance.py", "-i mappings.bam", "-r genes.bed", "-o inner", "-l -302", "-u 5003"]))
+    run_shell( " ".join(["inner_distance.py", "-i mappings.bam", "-r genes.bed", "-o inner", "-l -303", "-u 5002"]))
     
     results_id = dxpy.upload_local_file("inner.inner_distance_freq.txt", wait_on_close=True).get_id()
     return {"results":results_id}
@@ -93,29 +148,10 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     report_details = {}
 
     # Gene Body Dist
-    dxpy.download_dxfile(geneBody, "geneBody.txt")
-    
-    with open("geneBody.txt", "r") as fh:
-        loc_in_gene = []
-        cover = []
-        line = fh.readline()
-        total_reads = float(line.split()[-1])
-        fh.readline()
-        fh.readline()
-
-        for i in range(100):
-            line = fh.readline()
-            loc_in_gene.append(i)
-            count = float(line.split("\t")[1])
-            cover.append(count)
-            total_reads += count
-
-        # normalize by total reads for %
-        for i in range(len(cover)):
-            cover[i] /= total_reads
+    loc_in_gene = [n for n in range(100)]
     
     report_details['Gene Body Coverage'] = { "Normalized Location in Gene":loc_in_gene,
-                                             "% of Reads Covering":cover }
+                                             "% of Reads Covering":geneBody }
 
     #########################
 
@@ -134,24 +170,28 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                 start, end, num_reads = [int(x) for x in line.split()]
                 if num_reads != 0:
                     # store center position of this bucket
-                    inner_bucket.append(int(end-start))
+                    inner_bucket.append(int(end-((end-start)/2)))
                     inner_num_reads.append(num_reads)
 
                 line = fh.readline().rstrip("\n")
 
         # find total to normalize
         inner_total_reads = sum(inner_num_reads)
+        print "Total reads for inner distance calculation: "+str(inner_total_reads)
+        inner_median = None
         running_total = 0
+        inner_length_sum = 0
         for i in range(len(inner_bucket)):
             # multiply read length by number of observations for the mean
-            inner_length_sum = inner_bucket[i] * inner_num_reads[i]
+            inner_length_sum += inner_bucket[i] * inner_num_reads[i]
 
             # calculate median
             running_total += inner_num_reads[i]
-            if running_total >= inner_total_reads / 2:
+            if running_total >= inner_total_reads / 2 and inner_median == None:
                 inner_median = inner_bucket[i]
 
         inner_mean = inner_length_sum / inner_total_reads
+        print "inner distance metrics: "+" ".join([str(inner_length_sum), str(inner_total_reads)])
 
         # calc standard deviation
         std_sum = 0
@@ -180,10 +220,10 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
             line = line.rstrip("\n")
             if line.startswith("events"):
                 # parse out the % and assign them
-                se_pn, se_cn, se_k = [float(n) for n in line[9:-1].split(",")]
+                se_pn, se_cn, se_k = [float(n)/100 for n in line[9:-1].split(",")]
 
             if line.startswith("junction"):
-                sj_pn, sj_cn, sj_k = [float(n) for n in line[11:-1].split(",")]
+                sj_pn, sj_cn, sj_k = [float(n)/100 for n in line[11:-1].split(",")]
 
             line = fh.readline()
                 
@@ -206,10 +246,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     with open("read_dup.txt", "r") as fh:
         # pull of first header
         line = fh.readline()
-        print line
         line = fh.readline()
-        print line
-        print "about to start first file"
         # read until we hit the stats for sequence based duplication
         while not line.startswith("Occurrence"):
             c, r = [int(n) for n in line.split()]
@@ -217,14 +254,9 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
             pos_num_reads.append(float(r))
             pos_total_reads += r
             line = fh.readline()
-            print line
-
-        print "finished with first file"
 
         #get next line to start with the data
         line = fh.readline()
-        print line
-        print "about to start second file"
         while line != "":
             c, r = [int(n) for n in line.split()]
             seq_copy.append(c)
@@ -251,7 +283,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     if contam != None:
         contam_report = []
         for i in range(len(contam)):
-            contam_report.append({"Contaminant Name":name[i], "% Reads Mapping":contam[i]})
+            contam_report.append({"Contaminant Name":names[i], "% Reads Mapping":contam[i]})
 
         report_details['Contamination'] = contam_report
                        
@@ -263,22 +295,22 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     report_name = dxpy.DXGTable(mappings).describe()['name'] + " RSeQC report"
 
     # create report
-    report = dxpy.new_dxrecord(name=report_name, details=report_details, types=["Report"])
+    report = dxpy.new_dxrecord(name=report_name, details=report_details, types=["Report", "RSeQC"])
+    report.close()
 
     return {"Report": dxpy.dxlink(report.get_id())}
 
 @dxpy.entry_point("main")
 def main(**job_inputs):
     output = {}
+    reportInput = {}
     
     bed_id = job_inputs["BED file"]
     mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
 
-    
+    # output mappings as SAM for analysis modules
     run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
-
     run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
-    
     bam_id = dxpy.upload_local_file("mappings.bam", wait_on_close=True).get_id()
 
     job1 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "geneBody_coverage" )
@@ -296,19 +328,7 @@ def main(**job_inputs):
     # implement this one when we can request a large RAM instance - requires 19GB for human genome
     #job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution" )
 
-    reportInput = {}
-    reportInput['geneBody'] = {"job":job1.get_id(), "field":"results"}
-    if job2 != None:
-        reportInput['inner_dist'] = {"job":job2.get_id(), "field":"results"}
-    else:
-        reportInput['inner_dist'] = None
-    reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
-    reportInput['read_dist'] = None
-    reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
-    reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
-    reportInput['contam'] = None
-    reportInput['names'] = None
-
+    # get contaminant mapping started if we're doing it:
     if "Contaminants" in job_inputs:
         name_input = []
         contam_input = []
@@ -322,8 +342,24 @@ def main(**job_inputs):
     
         reportInput['contam'] = contam_input
         reportInput['names'] = name_input
+    else:
+        reportInput['contam'] = None
+        reportInput['names'] = None
+
+
+    reportInput['geneBody'] = {"job":job1.get_id(), "field":"results"}
+    if job2 != None:
+        reportInput['inner_dist'] = {"job":job2.get_id(), "field":"results"}
+    else:
+        reportInput['inner_dist'] = None
+    reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
+    reportInput['read_dist'] = None
+    reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
+    reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
+
 
     reportJob = dxpy.new_dxjob( reportInput, "generate_report" )
+    
 
     output['Report'] = {"job":reportJob.get_id(), "field": "Report"}
     
