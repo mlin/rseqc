@@ -173,7 +173,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         # if a bucket has less than 0.1% of reads in it then don't include it
         cutoff = 0.001
 
-        with open("inner.inner_distance_freq.txt", "r") as fh:
+        with open("inner_dist.txt", "r") as fh:
             line = fh.readline().rstrip("\n")
             while line != "":
                 inner_total_reads += int(line.split()[2])
@@ -182,7 +182,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         bucket_cutoff = cutoff * inner_total_reads
         print "Applying cutoff of: "+str(cutoff)+" for inner distance calculation"
 
-        with open("inner.inner_distance_freq.txt", "r") as fh:
+        with open("inner_dist.txt", "r") as fh:
             line = fh.readline().rstrip("\n")
             while line != "":
                 start, end, num_reads = [int(x) for x in line.split()]
@@ -349,7 +349,6 @@ def main(**job_inputs):
     bed_id = job_inputs["BED file"]
     mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
 
-
     # output mappings as SAM for analysis modules
     run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
     run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
@@ -373,6 +372,9 @@ def main(**job_inputs):
 
     # get contaminant mapping started if we're doing it:
     if "Contaminants" in job_inputs:
+        if not "Original Reads" in job_inputs:
+            raise dxpy.AppError("Original Reads must be input to calculate contamination levels. Please also supply the reads object that corresponds to these RNA-Seq mappings")
+
         name_input = []
         contam_input = []
 
