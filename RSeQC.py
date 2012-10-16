@@ -130,8 +130,14 @@ def juntion_annotation(BAM_file, BED_file):
     return {"results":results_id}
 
 @dxpy.entry_point("read_distribution")
-def read_distribution():
-    pass
+def read_distribution(BAM_file, BED_file):
+    dxpy.download_dxfile(BAM_file, "mappings.bam")
+    dxpy.download_dxfile(BED_file, "genes.bed")
+
+    run_shell(" ".join(["read_distribution.py", "-i mappings.bam", "-r genes.bed", ">", "read_dist.txt"]))
+
+    results_id = dxpy.upload_local_file("read_dist.txt", wait_on_close=True).get_id()
+    return {"results":results_id}
 
 @dxpy.entry_point("read_duplication")
 def read_duplication(BAM_file):
@@ -163,12 +169,24 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
 
         inner_bucket = []
         inner_num_reads = []
+        inner_total_reads = 0
+        # if a bucket has less than 0.1% of reads in it then don't include it
+        cutoff = 0.001
 
-        with open("inner_dist.txt", "r") as fh:
+        with open("inner_dist.inner_distance_freq.txt", "r") as fh:
+            line = fh.readline().rstrip("\n")
+            while line != "":
+                inner_total_reads += int(line.split()[2])
+                line = fh.readline().rstrip("\n")
+
+        bucket_cutoff = cutoff * inner_total_reads
+        print "Applying cutoff of: "+str(cutoff)+" for inner distance calculation"
+
+        with open("inner_dist.inner_distance_freq.txt", "r") as fh:
             line = fh.readline().rstrip("\n")
             while line != "":
                 start, end, num_reads = [int(x) for x in line.split()]
-                if num_reads != 0:
+                if num_reads > bucket_cutoff:
                     # store center position of this bucket
                     inner_bucket.append(int(end-((end-start)/2)))
                     inner_num_reads.append(num_reads)
@@ -196,7 +214,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         # calc standard deviation
         std_sum = 0
         for i in range(len(inner_bucket)):
-            std_sum = ((inner_bucket[i] - inner_mean) * inner_num_reads[i]) ** 2
+            std_sum = ((inner_bucket[i] - inner_mean) ** 2) * inner_num_reads[i]
 
         std_sum /= inner_total_reads
         inner_std = math.sqrt(std_sum)
@@ -278,6 +296,29 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     
     ############################
 
+    # read distribution report
+    if read_dist != None:
+        dxpy.download_dxfile(read_dist, "read_dist.txt")
+
+        report_details['Read Distribution'] = {}
+
+        with open("read_dist.txt", "r") as rd_file:
+            report_details['Read Distribution']['Total Reads'] = int(rd_file.readline().split("\t")[1])
+            report_details['Read Distribution']['Total Tags'] = int(rd_file.readline().split("\t")[1])
+            report_details['Read Distribution']['Total Assigned Tags'] = int(rd_file.readline().split("\t")[1])
+
+            # pull out line of "="s
+            rd_file.readline()
+            # pull header line
+            rd_file.readline()
+            line = rd_file.readline()
+            while not line.startswith("="):
+                fields = line.split("\t")
+                report_details['Read Distribution'][fields[0]] = [int(field[1]), int(field[2]), float(field[3])]
+                line = rd_file.readline()
+
+    #############################
+
     # add report of contaminations if calculated
 
     if contam != None:
@@ -308,6 +349,7 @@ def main(**job_inputs):
     bed_id = job_inputs["BED file"]
     mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
 
+
     # output mappings as SAM for analysis modules
     run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
     run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
@@ -326,7 +368,8 @@ def main(**job_inputs):
     job4 = dxpy.new_dxjob( {"BAM_file":dxpy.dxlink(bam_id)}, "read_duplication" )
 
     # implement this one when we can request a large RAM instance - requires 19GB for human genome
-    #job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution" )
+    #job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution", 
+    #                       {"systemRequirements": {"instanceType":"dx_m2.2xlarge"}} )
 
     # get contaminant mapping started if we're doing it:
     if "Contaminants" in job_inputs:
@@ -353,8 +396,9 @@ def main(**job_inputs):
     else:
         reportInput['inner_dist'] = None
     reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
-    reportInput['read_dist'] = None
     reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
+    #reportInput['read_dist'] = {"job":job5.get_id(), "field":"results"}
+    reportInput['read_dist'] = None
     reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
 
 

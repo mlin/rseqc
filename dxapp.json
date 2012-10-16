@@ -14,5 +14,6 @@
     {"name": "Report", "class": "record", "type": "Report"}
   ],
   "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}]},
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}}
 }
