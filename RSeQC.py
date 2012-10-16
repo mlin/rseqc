@@ -173,7 +173,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         # if a bucket has less than 0.1% of reads in it then don't include it
         cutoff = 0.001
 
-        with open("inner_dist.inner_distance_freq.txt", "r") as fh:
+        with open("inner.inner_distance_freq.txt", "r") as fh:
             line = fh.readline().rstrip("\n")
             while line != "":
                 inner_total_reads += int(line.split()[2])
@@ -182,7 +182,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         bucket_cutoff = cutoff * inner_total_reads
         print "Applying cutoff of: "+str(cutoff)+" for inner distance calculation"
 
-        with open("inner_dist.inner_distance_freq.txt", "r") as fh:
+        with open("inner.inner_distance_freq.txt", "r") as fh:
             line = fh.readline().rstrip("\n")
             while line != "":
                 start, end, num_reads = [int(x) for x in line.split()]
