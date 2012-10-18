@@ -20,7 +20,7 @@ def map_contaminant(Contig, Reads):
         raise dxpy.AppError("Unable to find app 'bwa'.  Please install it to enable contaminant mapping")
 
     # TODO: find optimal chunk size so we don't launch too many bwa jobs
-    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True, "chunk_size":25000000})
+    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True, "chunk_size":10000000})
 
     total_reads = 0
     for r in Reads:
