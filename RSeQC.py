@@ -19,7 +19,8 @@ def map_contaminant(Contig, Reads):
     except StopIteration:
         raise dxpy.AppError("Unable to find app 'bwa'.  Please install it to enable contaminant mapping")
 
-    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True, "chunk_size":1000000})
+    # TODO: find optimal chunk size so we don't launch too many bwa jobs
+    map_job = bwa.run({"reads":Reads, "reference": Contig, "discard_unmapped_rows":True, "chunk_size":25000000})
 
     total_reads = 0
     for r in Reads:
@@ -46,8 +47,8 @@ def geneBody_coverage(BAM_file, BED_file):
     dxpy.download_dxfile(BAM_file, "mappings.bam")
 
     # split mappings into chunks that can be done on a single worker
-    # all mappings are loaded into RAM so can only do 10 million at a time
-    run_shell(" ".join(["samtools", "view", "mappings.bam", "|", "split", "-l 10000000", "-", "split_map"]))
+    # all mappings are loaded into RAM so can only do 5 million at a time
+    run_shell(" ".join(["samtools", "view", "mappings.bam", "|", "split", "-l 5000000", "-", "split_map"]))
     run_shell(" ".join(["samtools", "view", "-H", "mappings.bam", ">", "header_only.sam"]))
     files = os.listdir(".")
     jobs = []
