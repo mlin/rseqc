@@ -215,7 +215,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         # calc standard deviation
         std_sum = 0
         for i in range(len(inner_bucket)):
-            std_sum = ((inner_bucket[i] - inner_mean) ** 2) * inner_num_reads[i]
+            std_sum += ((inner_bucket[i] - inner_mean) ** 2) * inner_num_reads[i]
 
         std_sum /= inner_total_reads
         inner_std = math.sqrt(std_sum)
