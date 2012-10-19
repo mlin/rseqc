@@ -218,7 +218,8 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
             std_sum += ((inner_bucket[i] - inner_mean) ** 2) * inner_num_reads[i]
 
         std_sum /= inner_total_reads
-        inner_std = math.sqrt(std_sum)
+        inner_std = int(math.sqrt(std_sum)+0.5)
+        
 
         report_details['Paired Read Inner Distance'] = {"Inner Distance (bp)": inner_bucket, 
                                                         "Count": inner_num_reads,
