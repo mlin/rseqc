@@ -305,9 +305,9 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
         report_details['Read Distribution'] = {}
 
         with open("read_dist.txt", "r") as rd_file:
-            report_details['Read Distribution']['Total Reads'] = int(rd_file.readline().split("\t")[1])
-            report_details['Read Distribution']['Total Tags'] = int(rd_file.readline().split("\t")[1])
-            report_details['Read Distribution']['Total Assigned Tags'] = int(rd_file.readline().split("\t")[1])
+            report_details['Read Distribution']['Total Reads'] = int(rd_file.readline().split()[-1])
+            report_details['Read Distribution']['Total Tags'] = int(rd_file.readline().split()[-1])
+            report_details['Read Distribution']['Total Assigned Tags'] = int(rd_file.readline().split()[-1])
 
             # pull out line of "="s
             rd_file.readline()
@@ -315,8 +315,8 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
             rd_file.readline()
             line = rd_file.readline()
             while not line.startswith("="):
-                fields = line.split("\t")
-                report_details['Read Distribution'][fields[0]] = [int(field[1]), int(field[2]), float(field[3])]
+                fields = line.split()
+                report_details['Read Distribution'][fields[0]] = [int(fields[1]), int(fields[2]), float(fields[3])]
                 line = rd_file.readline()
 
     #############################
@@ -351,27 +351,6 @@ def main(**job_inputs):
     bed_id = job_inputs["BED file"]
     mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
 
-    # output mappings as SAM for analysis modules
-    run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
-    run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
-    bam_id = dxpy.upload_local_file("mappings.bam", wait_on_close=True).get_id()
-
-    job1 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "geneBody_coverage" )
-
-    # if paired then do inner distance calculation
-    if "chr2" in dxpy.DXGTable(mappings_id).get_col_names():
-        job2 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "inner_distance" )
-    else:
-        job2 = None
-
-    job3 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "junction_annotation" )
-
-    job4 = dxpy.new_dxjob( {"BAM_file":dxpy.dxlink(bam_id)}, "read_duplication" )
-
-    # implement this one when we can request a large RAM instance - requires 19GB for human genome
-    #job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution", 
-    #                       {"systemRequirements": {"instanceType":"dx_m2.2xlarge"}} )
-
     # get contaminant mapping started if we're doing it:
     if "Contaminants" in job_inputs:
         if not "Original Reads" in job_inputs:
@@ -393,6 +372,27 @@ def main(**job_inputs):
         reportInput['contam'] = None
         reportInput['names'] = None
 
+    # output mappings as SAM for analysis modules
+    run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
+    run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
+    bam_id = dxpy.upload_local_file("mappings.bam", wait_on_close=True).get_id()
+
+    job1 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "geneBody_coverage" )
+
+    # if paired then do inner distance calculation
+    if "chr2" in dxpy.DXGTable(mappings_id).get_col_names():
+        job2 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "inner_distance" )
+    else:
+        job2 = None
+
+    job3 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "junction_annotation" )
+
+    job4 = dxpy.new_dxjob( {"BAM_file":dxpy.dxlink(bam_id)}, "read_duplication" )
+
+    # implement this one when we can request a large RAM instance - requires 19GB for human genome
+    job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution")
+    #                       {"systemRequirements": {"instanceType":"dx_m2.2xlarge"}} )
+
 
     reportInput['geneBody'] = {"job":job1.get_id(), "field":"results"}
     if job2 != None:
@@ -401,8 +401,7 @@ def main(**job_inputs):
         reportInput['inner_dist'] = None
     reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
     reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
-    #reportInput['read_dist'] = {"job":job5.get_id(), "field":"results"}
-    reportInput['read_dist'] = None
+    reportInput['read_dist'] = {"job":job5.get_id(), "field":"results"}
     reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
 
 

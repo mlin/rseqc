@@ -39,6 +39,32 @@ class TestMyApp(unittest.TestCase):
         job = self.program.run(input)
         print "launched test_unpaired ", job.get_id()
 
+    def test_small_paired_with_contam(self):
+        bed_file = dxpy.find_one_data_object(name="hg19_GRCh37_Feb2009_RefSeq.bed")['id']
+        mappings = dxpy.find_one_data_object(name="SRR018256_end100000_mappings", typename="LetterMappings")['id']
+        contam_contig = dxpy.find_one_data_object(name="human rRNA", typename="ContigSet")['id']
+        reads = dxpy.find_one_data_object(name="SRR018256_1_end100000 reads", typename="LetterReads")['id']
+        if bed_file == None:
+            print "Cannot find hg19_GRCh37_Feb2009_RefSeq.bed.  Please upload it"
+            return False
+        if mappings == None:
+            print "Cannot find unpaired_RNA-Seq_mappings.  Please upload it"
+            return False
+        if contam_contig == None:
+            print "can't find contigset"
+            return False
+        if reads == None:
+            print "can't find reads"
+            return False
+
+        input = { 'RNA-Seq Mappings': dxpy.dxlink(mappings), 
+                  'BED file': dxpy.dxlink(bed_file),
+                  'Contaminants': [dxpy.dxlink(contam_contig)],
+                  'Original Reads': [dxpy.dxlink(reads)] }
+
+        print "Running program with", input
+        job = self.program.run(input)
+        print "launched test_unpaired ", job.get_id()
 
     def test_paired_with_contam(self):
         bed_file = dxpy.find_one_data_object(name="hg19_GRCh37_Feb2009_RefSeq.bed")['id']
