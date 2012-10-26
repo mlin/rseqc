@@ -13,6 +13,6 @@
   "outputSpec": [
     {"name": "Report", "class": "record", "type": "Report"}
   ],
-  "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}], "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "run_gbc":{"instanceType":"dx_m1.xlarge"}},
+  "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}], "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "run_gbc":{"instanceType":"dx_m1.xlarge"}}},
   "version": "0.0.1"
 }
