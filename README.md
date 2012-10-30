@@ -8,7 +8,7 @@ This app implements selected packages from the [RSeQC suite](http://code.google.
 * geneBody_coverage
 * inner_distance
 * junction_annotation
-* read_distribution (Coming Soon!)
+* read_distribution
 * read_duplication
 
 The app requires as input RNA-Seq mappings and a BED file describing the gene model used for or derived from these mappings.
