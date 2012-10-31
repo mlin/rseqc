@@ -48,7 +48,7 @@ def geneBody_coverage(BAM_file, BED_file):
 
     # split mappings into chunks that can be done on a single worker
     # all mappings are loaded into RAM so can only do 5 million at a time
-    run_shell(" ".join(["samtools", "view", "mappings.bam", "|", "split", "-l 5000000", "-", "split_map"]))
+    run_shell(" ".join(["samtools", "view", "mappings.bam", "|", "split", "-l 10000000", "-", "split_map"]))
     run_shell(" ".join(["samtools", "view", "-H", "mappings.bam", ">", "header_only.sam"]))
     files = os.listdir(".")
     jobs = []
@@ -59,9 +59,9 @@ def geneBody_coverage(BAM_file, BED_file):
             # convert to BAM
             run_shell(" ".join(["samtools", "view", "-S", "-b", "temp.sam", ">", "temp.bam"]))
             # upload file
-            dxfh = dxpy.upload_local_file("temp.bam")
+            split_bam = dxpy.upload_local_file("temp.bam")
             # run analysis
-            jobs.append(dxpy.new_dxjob({"BAM_file":BAM_file, "BED_file":BED_file}, "run_gbc"))
+            jobs.append(dxpy.new_dxjob({"BAM_file":dxpy.dxlink(split_bam.get_id()), "BED_file":BED_file}, "run_gbc"))
             
     run_shell( "ls -l" )
 
