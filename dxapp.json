@@ -2,7 +2,7 @@
   "name": "RSeQC",
   "title": "RNA-Seq Quality Control",
   "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools.  A graphical report of these metrics can be viewed in through the data browser.",
-  "categories": ["RNA-Seq"],
+  "categories": ["RNA-Seq", "Reports", "Statistics"],
   "dxapi": "1.0.0",
   "inputSpec": [
     {"name": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
