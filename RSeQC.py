@@ -1,5 +1,3 @@
-
-
 import dxpy
 import subprocess
 import math
@@ -161,7 +159,6 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                                              "% of Reads Covering":geneBody }
 
     #########################
-
     # Inner Distance
 
     if inner_dist != None:
@@ -219,7 +216,6 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
 
         std_sum /= inner_total_reads
         inner_std = int(math.sqrt(std_sum)+0.5)
-        
 
         report_details['Paired Read Inner Distance'] = {"Inner Distance (bp)": inner_bucket, 
                                                         "Count": inner_num_reads,
@@ -228,7 +224,6 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                                                         "Standard Deviation": inner_std}
 
     ############################
-
     # Junction Annotation
 
     dxpy.download_dxfile(junc_ann, "junc_ann.r")
@@ -251,7 +246,6 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                                               "Splicing Events": {"known": se_k, "partial novel": se_pn, "complete novel": se_cn}}
 
     ############################
-
     # read duplication
 
     dxpy.download_dxfile(read_dup, "read_dup.txt")
@@ -297,7 +291,6 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                                           "Sequence Based":{"Read Occurrences": seq_copy, "% Reads":seq_num_reads}}
     
     ############################
-
     # read distribution report
     if read_dist != None:
         dxpy.download_dxfile(read_dist, "read_dist.txt")
@@ -320,18 +313,16 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
                 line = rd_file.readline()
 
     #############################
-
     # add report of contaminations if calculated
 
     if contam != None:
         contam_report = []
         for i in range(len(contam)):
-            contam_report.append({"Contaminant Name":names[i], "% Reads Mapping":contam[i]})
+            contam_report.append({"Contaminant Name": names[i], "% Reads Mapping": contam[i]})
 
         report_details['Contamination'] = contam_report
                        
     #############################
-
     # add link to mappings
     report_details['original_mappings'] = mappings
 
@@ -348,20 +339,20 @@ def main(**job_inputs):
     output = {}
     reportInput = {}
     
-    bed_id = job_inputs["BED file"]
-    mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
+    bed_id = job_inputs["bed_file"]
+    mappings_id = job_inputs["rna_seq_mappings"]["$dnanexus_link"]
 
     # get contaminant mapping started if we're doing it:
-    if "Contaminants" in job_inputs:
-        if not "Original Reads" in job_inputs:
-            raise dxpy.AppError("Original Reads must be input to calculate contamination levels. Please also supply the reads object that corresponds to these RNA-Seq mappings")
+    if "contaminants" in job_inputs:
+        if not "original_reads" in job_inputs:
+            raise dxpy.AppError("Original reads must be input to calculate contamination levels. Please also supply the reads object that corresponds to these RNA-Seq mappings")
 
         name_input = []
         contam_input = []
 
         #spawn mappings job for each ContigSet
-        for contaminant in job_inputs['Contaminants']:
-            calc_job = map_contaminant(Reads=job_inputs['Original Reads'], Contig=contaminant)
+        for contaminant in job_inputs['contaminants']:
+            calc_job = map_contaminant(Reads=job_inputs['original_reads'], Contig=contaminant)
 
             name_input.append(dxpy.DXRecord(contaminant).describe()['name'])
             contam_input.append({"job":calc_job, "field":"percent_mapped"})
@@ -393,20 +384,17 @@ def main(**job_inputs):
     job5 = dxpy.new_dxjob( {'BED_file':bed_id, "BAM_file":dxpy.dxlink(bam_id)}, "read_distribution")
     #                       {"systemRequirements": {"instanceType":"dx_m2.2xlarge"}} )
 
-
     reportInput['geneBody'] = {"job":job1.get_id(), "field":"results"}
     if job2 != None:
         reportInput['inner_dist'] = {"job":job2.get_id(), "field":"results"}
     else:
         reportInput['inner_dist'] = None
-    reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
-    reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
-    reportInput['read_dist'] = {"job":job5.get_id(), "field":"results"}
-    reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
-
+    reportInput['junc_ann'] = {"job": job3.get_id(), "field": "results"}
+    reportInput['read_dup'] = {"job": job4.get_id(), "field": "results"}
+    reportInput['read_dist'] = {"job": job5.get_id(), "field": "results"}
+    reportInput['mappings'] = job_inputs["rna_seq_mappings"]
 
     reportJob = dxpy.new_dxjob( reportInput, "generate_report" )
-    
 
     output['Report'] = {"job":reportJob.get_id(), "field": "Report"}
     

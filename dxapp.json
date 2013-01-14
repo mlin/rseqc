@@ -1,17 +1,17 @@
 {
   "name": "RSeQC",
   "title": "RNA-Seq Quality Control",
-  "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools.  A graphical report of these metrics can be viewed in through the data browser.",
+  "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools. A graphical report of these metrics can be viewed in through the data browser.",
   "categories": ["RNA-Seq", "Reports", "Statistics"],
   "dxapi": "1.0.0",
   "inputSpec": [
-    {"name": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
-    {"name": "BED file", "class": "file"},
-    {"name": "Contaminants", "class": "array:record", "type": "ContigSet", "optional":true},
-    {"name": "Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true}
+    {"name": "rna_seq_mappings", "label": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
+    {"name": "bed_file", "label": "BED file", "class": "file"},
+    {"name": "contaminants", "label": "Contaminants", "class": "array:record", "type": "ContigSet", "optional": true},
+    {"name": "original_reads", "label": "Original Reads", "class": "array:gtable", "type": "LetterReads", "optional": true}
   ],
   "outputSpec": [
-    {"name": "Report", "class": "record", "type": "Report"}
+    {"name": "report", "label": "Report", "class": "record", "type": "Report"}
   ],
   "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}], "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "inner_distance": {"instanceType":"dx_m1.xlarge"}}},
   "version": "1.0.0",

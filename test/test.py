@@ -8,7 +8,6 @@ src_dir = os.path.join(os.path.dirname(__file__), "..")
 test_resources_dir = os.path.join(src_dir, "test", "resources")
 preview = 50
 
-
 class TestMyApp(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -32,8 +31,8 @@ class TestMyApp(unittest.TestCase):
             print "Cannot find unpaired_RNA-Seq_mappings.  Please upload it"
             return False
 
-        input = { 'RNA-Seq Mappings': dxpy.dxlink(mappings), 
-                  'BED file': dxpy.dxlink(bed_file) }
+        input = { 'rna_seq_mappings': dxpy.dxlink(mappings), 
+                  'bed_file': dxpy.dxlink(bed_file) }
 
         print "Running program with", input
         job = self.program.run(input)
@@ -45,10 +44,10 @@ class TestMyApp(unittest.TestCase):
         contam_contig = dxpy.find_one_data_object(name="human rRNA", typename="ContigSet")['id']
         reads = dxpy.find_one_data_object(name="SRR018256_1_end100000 reads", typename="LetterReads")['id']
         if bed_file == None:
-            print "Cannot find hg19_GRCh37_Feb2009_RefSeq.bed.  Please upload it"
+            print "Cannot find hg19_GRCh37_Feb2009_RefSeq.bed. Please upload it."
             return False
         if mappings == None:
-            print "Cannot find unpaired_RNA-Seq_mappings.  Please upload it"
+            print "Cannot find unpaired_RNA-Seq_mappings. Please upload it."
             return False
         if contam_contig == None:
             print "can't find contigset"
@@ -57,10 +56,10 @@ class TestMyApp(unittest.TestCase):
             print "can't find reads"
             return False
 
-        input = { 'RNA-Seq Mappings': dxpy.dxlink(mappings), 
-                  'BED file': dxpy.dxlink(bed_file),
-                  'Contaminants': [dxpy.dxlink(contam_contig)],
-                  'Original Reads': [dxpy.dxlink(reads)] }
+        input = { 'rna_seq_mappings': dxpy.dxlink(mappings), 
+                  'bed_file': dxpy.dxlink(bed_file),
+                  'contaminants': [dxpy.dxlink(contam_contig)],
+                  'original_reads': [dxpy.dxlink(reads)] }
 
         print "Running program with", input
         job = self.program.run(input)
@@ -84,16 +83,14 @@ class TestMyApp(unittest.TestCase):
             print "Cannot find SRR018256_reads.  Please upload it"
             return False
 
-
-        input = { 'RNA-Seq Mappings': dxpy.dxlink(mappings), 
-                  'BED file': dxpy.dxlink(bed_file),
-                  'Contaminants': [dxpy.dxlink(contam_contig)],
-                  'Original Reads': [dxpy.dxlink(reads)] }
+        input = { 'rna_seq_mappings': dxpy.dxlink(mappings), 
+                  'bed_file': dxpy.dxlink(bed_file),
+                  'contaminants': [dxpy.dxlink(contam_contig)],
+                  'original_reads': [dxpy.dxlink(reads)] }
 
         print "Running program with", input
         job = self.program.run(input)
         print "launched test_paired_with_contam ", job.get_id()
-
         
 if __name__ == '__main__':
     unittest.main()
