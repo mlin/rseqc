@@ -348,20 +348,21 @@ def main(**job_inputs):
     output = {}
     reportInput = {}
     
-    bed_id = job_inputs["BED file"]
-    mappings_id = job_inputs["RNA-Seq Mappings"]["$dnanexus_link"]
+    run_shell("dx-spans-to-bed --output genes.bed " + job_inputs["gene_model"]["$dnanexus_link"])
+    bed_id = dxpy.upload_local_file("genes.bed").get_id()
+    mappings_id = job_inputs["mappings"]["$dnanexus_link"]
 
     # get contaminant mapping started if we're doing it:
-    if "Contaminants" in job_inputs:
-        if not "Original Reads" in job_inputs:
+    if "contaminants" in job_inputs:
+        if not "original_reads" in job_inputs:
             raise dxpy.AppError("Original Reads must be input to calculate contamination levels. Please also supply the reads object that corresponds to these RNA-Seq mappings")
 
         name_input = []
         contam_input = []
 
         #spawn mappings job for each ContigSet
-        for contaminant in job_inputs['Contaminants']:
-            calc_job = map_contaminant(Reads=job_inputs['Original Reads'], Contig=contaminant)
+        for contaminant in job_inputs['contaminants']:
+            calc_job = map_contaminant(Reads=job_inputs['original_reads'], Contig=contaminant)
 
             name_input.append(dxpy.DXRecord(contaminant).describe()['name'])
             contam_input.append({"job":calc_job, "field":"percent_mapped"})
@@ -402,7 +403,7 @@ def main(**job_inputs):
     reportInput['junc_ann'] = {"job":job3.get_id(), "field":"results"}
     reportInput['read_dup'] = {"job":job4.get_id(), "field":"results"}
     reportInput['read_dist'] = {"job":job5.get_id(), "field":"results"}
-    reportInput['mappings'] = job_inputs["RNA-Seq Mappings"]
+    reportInput['mappings'] = job_inputs["mappings"]
 
 
     reportJob = dxpy.new_dxjob( reportInput, "generate_report" )

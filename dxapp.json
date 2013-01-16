@@ -5,10 +5,10 @@
   "categories": ["RNA-Seq", "Reports", "Statistics"],
   "dxapi": "1.0.0",
   "inputSpec": [
-    {"name": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
-    {"name": "BED file", "class": "file"},
-    {"name": "Contaminants", "class": "array:record", "type": "ContigSet", "optional":true},
-    {"name": "Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true}
+    {"name": "mappings", "label": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
+    {"name": "gene_model", "class": "gtable", "type": "Genes", "label": "Gene Model"},
+    {"name": "contaminants", "label":"Contaminants", "class": "array:record", "type": "ContigSet", "optional":true},
+    {"name": "original_reads", "label":"Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true}
   ],
   "outputSpec": [
     {"name": "Report", "class": "record", "type": "Report"}
