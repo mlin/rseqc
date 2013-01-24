@@ -1,5 +1,5 @@
 {
-  "name": "RSeQC",
+  "name": "rseqc",
   "title": "RNA-Seq Quality Control",
   "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools. A graphical report of these metrics can be viewed in through the data browser.",
   "categories": ["RNA-Seq", "Reports", "Statistics"],
