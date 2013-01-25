@@ -17,8 +17,7 @@ Optionally, the user may estimate the amounts of different contaminants in
 the sample. This is done by suppling sequences through the "contaminants"
 input, which takes any number of [ContigSet
 objects](http://wiki.dnanexus.com/Types/ContigSet). FASTA files may be
-imported into ContigSets using the [Genome Importer
-app](http://wiki.dnanexus.com/Apps/fasta_contigset_importer).
+imported into ContigSet objects using the **Genome Importer** app.
 
 One or more [Reads objects](http://wiki.dnanexus.com/Types/Reads) MUST also
 be given if contaminants are given. The reads will be matched against each
