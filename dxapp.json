@@ -1,25 +1,26 @@
 {
   "name": "rseqc",
   "title": "RNA-Seq Quality Control",
-  "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools. A graphical report of these metrics can be viewed in through the data browser.",
+  "summary": "Generates QC metrics for RNA-Seq data using the RSeQC suite of tools (a graphical report of these metrics can be viewed on the DNAnexus website)",
   "categories": ["RNA-Seq", "Reports", "Statistics"],
   "dxapi": "1.0.0",
   "inputSpec": [
-    {"name": "mappings", "label": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings"},
-    {"name": "gene_model", "class": "gtable", "type": "Genes", "label": "Gene Model"},
-    {"name": "contaminants", "label":"Contaminants", "class": "array:record", "type": "ContigSet", "optional":true},
-    {"name": "original_reads", "label":"Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true}
+    {"name": "mappings", "label": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings", "help": "The Mappings object containing the RNA-Seq mappings for which metrics will be calculated"},
+    {"name": "gene_model", "class": "gtable", "type": "Genes", "label": "Gene Model", "help": "A Genes object containing the gene model that the report will be generated against. (Gene objects can be created using the BED/GFF/GTF Importer apps)."},
+    {"name": "contaminants", "label":"Contaminants", "class": "array:record", "type": "ContigSet", "optional":true, "help": "An array of one or more ContigSet/Genome objects representing constaminant sequences. (Such objects can be created from FASTA files using the Genome Importer app)."},
+    {"name": "original_reads", "label":"Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true, "help": "The original reads that the RNA-Seq mappings were generated from (required only if contaminant sequences are given -- contamination will be checked by aligning the original reads to the contaminant sequences)."}
   ],
   "outputSpec": [
-    {"name": "report", "label": "Report", "class": "record", "type": "Report"}
+    {"name": "report", "label": "Report", "class": "record", "type": "Report", "help": "The resulting QC report"}
   ],
   "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}], "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "inner_distance": {"instanceType":"dx_m1.xlarge"}}},
-  "version": "1.0.0",
+  "version": "1.0.1",
   "details":{
     "upstreamAuthor": "Liguo Wang, Shengqin Wang, and Wei Li",
     "upstreamVersion": "2.3.3",
     "upstreamUrl": "http://code.google.com/p/rseqc/",
     "upstreamLicencses": ["GNU GLP v3"],
-    "citations": ["doi: 10.1093/bioinformatics/bts356"]
+    "citations": ["doi: 10.1093/bioinformatics/bts356"],
+    "advancedInputs": ["contaminants", "original_reads"]
   }
 }
