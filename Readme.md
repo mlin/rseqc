@@ -1,6 +1,3 @@
-**RSeQC - An RNA-Seq Quality Metric App**
------------------------------------------
-
 This app implements selected packages from the [RSeQC
 suite](http://code.google.com/p/rseqc/wiki/Manual). These are:
 

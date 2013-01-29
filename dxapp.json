@@ -14,7 +14,7 @@
     {"name": "report", "label": "Report", "class": "record", "type": "Report", "help": "The resulting QC report"}
   ],
   "runSpec": {"file": "RSeQC.py", "interpreter": "python2.7", "execDepends": [{"name": "python-numpy"}], "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "inner_distance": {"instanceType":"dx_m1.xlarge"}}},
-  "version": "1.0.1",
+  "version": "1.0.2",
   "details":{
     "upstreamAuthor": "Liguo Wang, Shengqin Wang, and Wei Li",
     "upstreamVersion": "2.3.3",
