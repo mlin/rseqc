@@ -398,6 +398,6 @@ def main(**job_inputs):
 
     reportJob = dxpy.new_dxjob( reportInput, "generate_report" )
 
-    output['Report'] = {"job":reportJob.get_id(), "field": "Report"}
+    output['report'] = {"job":reportJob.get_id(), "field": "Report"}
     
     return output
