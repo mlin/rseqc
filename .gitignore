@@ -1,0 +1,11 @@
+rseqc/*.egg/
+rseqc/build/
+rseqc/dist/
+rseqc/distribute_setup.pyc
+samtools/*.o
+samtools/*.a
+samtools/samtools
+samtools/bcftools/*.o
+samtools/bcftools/*.a
+resources/usr/local/bin/
+resources/usr/local/lib/
