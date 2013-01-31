@@ -19,12 +19,15 @@ import subprocess
 import math
 import os
 
+new_env = os.environ.copy()
+new_env['PYTHONPATH'] = "/usr/local/lib/python2.7/site-packages:" + new_env.get('PYTHONPATH', '')
+
 # main function will spawn each analysis as a separate job
 # each analysis will then download the mappings and BED gene model and run itself
 
 def run_shell( cmd ):
     print "Running: " + cmd
-    subprocess.check_call( cmd, shell=True )
+    subprocess.check_call(cmd, shell=True, env=new_env)
 
 def map_contaminant(Contig, Reads):
     # get ID of our mapper
