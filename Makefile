@@ -24,6 +24,7 @@ samtools:
 	cp -a samtools/samtools resources/usr/local/bin/samtools
 
 clean:
-	rm -rf resources/usr/local/bin/* resources/usr/local/lib/python2.7
+	$(MAKE) -C samtools clean
+	rm -rf resources/usr/local/bin/* resources/usr/local/lib/python2.7/site-packages/*
 
 .PHONY: all rseqc samtools clean
