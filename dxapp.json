@@ -6,6 +6,7 @@
   "dxapi": "1.0.0",
   "inputSpec": [
     {"name": "mappings", "label": "RNA-Seq Mappings", "class": "gtable", "type": "LetterMappings", "help": "The Mappings object containing the RNA-Seq mappings for which metrics will be calculated"},
+    {"name": "reference", "label": "Reference Genome", "class": "record", "type": "ContigSet", "help": "Reference genome reads are mapped against"},
     {"name": "gene_model", "class": "gtable", "type": "Genes", "label": "Gene Model", "help": "A Genes object containing the gene model that the report will be generated against. (Gene objects can be created using the BED/GFF/GTF Importer apps)."},
     {"name": "contaminants", "label":"Contaminants", "class": "array:record", "type": "ContigSet", "optional":true, "help": "An array of one or more ContigSet/Genome objects representing constaminant sequences. (Such objects can be created from FASTA files using the Genome Importer app)."},
     {"name": "original_reads", "label":"Original Reads", "class": "array:gtable", "type": "LetterReads", "optional":true, "help": "The original reads that the RNA-Seq mappings were generated from (required only if contaminant sequences are given -- contamination will be checked by aligning the original reads to the contaminant sequences)."}
@@ -20,7 +21,7 @@
     "buildDepends": [{"name": "libncurses5-dev"}],
     "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "inner_distance": {"instanceType":"dx_m1.xlarge"}}
   },
-  "version": "1.0.3",
+  "version": "1.1.0",
   "details":{
     "upstreamAuthor": "Liguo Wang, Shengqin Wang, and Wei Li",
     "upstreamVersion": "2.3.3",
