@@ -19,9 +19,11 @@
     "interpreter": "python2.7",
     "execDepends": [{"name": "python-numpy"}],
     "buildDepends": [{"name": "libncurses5-dev"}],
-    "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, "inner_distance": {"instanceType":"dx_m1.xlarge"}}
+    "systemRequirements": {"read_distribution": {"instanceType":"dx_m2.2xlarge"}, 
+                           "inner_distance": {"instanceType":"dx_m1.xlarge"},
+                           "read_duplication": {"instanceType":"dx_m2.2xlarge"}}
   },
-  "version": "1.1.1",
+  "version": "1.1.2",
   "details":{
     "upstreamAuthor": "Liguo Wang, Shengqin Wang, and Wei Li",
     "upstreamVersion": "2.3.3",
