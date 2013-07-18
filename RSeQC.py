@@ -247,19 +247,31 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
 
     dxpy.download_dxfile(junc_ann, "junc_ann.r")
 
-    with open("junc_ann.r", "r") as fh:
+    # initialize splicing values in case there was no splicing
+    sj_k = 0
+    sj_pn = 0
+    sj_cn = 0
 
-        line = fh.readline()
-        while line != "":
-            line = line.rstrip("\n")
-            if line.startswith("events"):
-                # parse out the % and assign them
-                se_pn, se_cn, se_k = [float(n)/100 for n in line[9:-1].split(",")]
+    se_k = 0
+    se_pn = 0
+    se_cn = 0
 
-            if line.startswith("junction"):
-                sj_pn, sj_cn, sj_k = [float(n)/100 for n in line[11:-1].split(",")]
+    if os.path.getsize("junc_ann.r") == 0:
+        print "No splicing events found so setting all junction stats to 0"
+    else:
+        with open("junc_ann.r", "r") as fh:
 
             line = fh.readline()
+            while line != "":
+                line = line.rstrip("\n")
+                if line.startswith("events"):
+                    # parse out the % and assign them
+                    se_pn, se_cn, se_k = [float(n)/100 for n in line[9:-1].split(",")]
+
+                if line.startswith("junction"):
+                    sj_pn, sj_cn, sj_k = [float(n)/100 for n in line[11:-1].split(",")]
+
+                line = fh.readline()
                 
     report_details['Junction Annotation'] = { "Splicing Junctions": {"known": sj_k, "partial novel": sj_pn, "complete novel": sj_cn},
                                               "Splicing Events": {"known": se_k, "partial novel": se_pn, "complete novel": se_cn}}
@@ -384,7 +396,7 @@ def main(**job_inputs):
         reportInput['names'] = None
 
     # output mappings as SAM for analysis modules
-    run_shell(" ".join(["dx-mappings-to-sam", "--output mappings.sam", mappings_id]))
+    run_shell(" ".join(["dx-mappings-to-sam", "--discard_unmapped", "--output mappings.sam", mappings_id]))
     run_shell(" ".join(["samtools", "view", "-S", "-b", "mappings.sam", ">", "mappings.bam"]))
     bam_id = dxpy.upload_local_file("mappings.bam", wait_on_close=True).get_id()
 
