@@ -12,7 +12,8 @@
     {"name": "original_reads", "label":"Original Reads", "class": "array:gtable", "type": "LetterReads", "optional": true, "help": "The original reads that the RNA-Seq mappings were generated from (required only if contaminant sequences are given -- contamination will be checked by aligning the original reads to the contaminant sequences)."}
   ],
   "outputSpec": [
-    {"name": "report", "label": "Report", "class": "record", "type": "Report", "help": "The resulting QC report"}
+    {"name": "report", "label": "Report", "class": "record", "type": "Report", "help": "The resulting QC report"},
+    {"name": "raw_output", "label": "Raw Output", "class": "file", "help": "zip of RSeQC output files"}
   ],
   "runSpec": {
     "file": "RSeQC.py",

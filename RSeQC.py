@@ -177,12 +177,15 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     report_details['Gene Body Coverage'] = { "Normalized Location in Gene":loc_in_gene,
                                              "% of Reads Covering":geneBody }
 
+    files_to_zip = []
+
     #########################
     # Inner Distance
 
     if inner_dist != None:
 
         dxpy.download_dxfile(inner_dist, "inner_dist.txt")
+        files_to_zip.append("inner_dist.txt")
 
         inner_bucket = []
         inner_num_reads = []
@@ -246,6 +249,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     # Junction Annotation
 
     dxpy.download_dxfile(junc_ann, "junc_ann.r")
+    files_to_zip.append("junc_ann.r")
 
     # initialize splicing values in case there was no splicing
     sj_k = 0
@@ -280,6 +284,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     # read duplication
 
     dxpy.download_dxfile(read_dup, "read_dup.txt")
+    files_to_zip.append("read_dup.txt")
 
     pos_copy = []
     pos_num_reads = []
@@ -325,6 +330,7 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     # read distribution report
     if read_dist != None:
         dxpy.download_dxfile(read_dist, "read_dist.txt")
+        files_to_zip.append("read_dist.txt")
 
         report_details['Read Distribution'] = {}
 
@@ -363,7 +369,13 @@ def generate_report(geneBody, inner_dist, junc_ann, read_dist, read_dup, mapping
     report = dxpy.new_dxrecord(name=report_name, details=report_details, types=["Report", "RSeQC"])
     report.close()
 
-    return {"Report": dxpy.dxlink(report.get_id())}
+    # zip
+    zip_filename = dxpy.DXGTable(mappings).describe()['name'] + " RSeQC.zip"
+    run_shell( "zip \"{}\" {}".format(zip_filename, ' '.join(files_to_zip)) )
+    zip_file = dxpy.upload_local_file(zip_filename)
+
+    return {"Report": dxpy.dxlink(report.get_id()),
+            "raw_output": dxpy.dxlink(zip_file.get_id())}
 
 @dxpy.entry_point("main")
 def main(**job_inputs):
@@ -430,5 +442,6 @@ def main(**job_inputs):
     reportJob = dxpy.new_dxjob( reportInput, "generate_report" )
 
     output['report'] = {"job":reportJob.get_id(), "field": "Report"}
+    output['raw_output'] = {"job":reportJob.get_id(), "field": "raw_output"}
     
     return output
